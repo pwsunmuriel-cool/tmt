@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Trail Making Test</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f172a; --panel: #1e293b; --panel-2: #0b1222; --line: #334155;
+    --text: #e2e8f0; --muted: #94a3b8; --accent: #6366f1; --accent-2: #818cf8;
+    --ok: #34d399; --err: #f43f5e; --warn: #fbbf24;
+    --safe-t: env(safe-area-inset-top, 0px); --safe-b: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+  body.testing { overflow: hidden; position: fixed; inset: 0; user-select: none; -webkit-user-select: none; }
+  button, input, select { font: inherit; color: inherit; }
+  .screen { display: none; min-height: 100dvh; padding: calc(16px + var(--safe-t)) 16px calc(16px + var(--safe-b)); }
+  .screen.active { display: flex; flex-direction: column; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 20px;
+    width: 100%; max-width: 560px; margin: auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 0 0 12px; }
+  .sub { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+  label.f { display: block; font-size: 13px; color: var(--muted); margin: 12px 0 6px; }
+  input[type=text], input[type=number], select {
+    width: 100%; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px;
+    padding: 11px 12px; font-size: 16px; /* 16px prevents iOS auto-zoom */ }
+  .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
+  .seg input { display: none; }
+  .seg label { text-align: center; padding: 11px 6px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--panel-2); font-size: 15px; cursor: pointer; }
+  .seg input:checked + label { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .check { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-size: 15px; }
+  .check input { width: 20px; height: 20px; accent-color: var(--accent); }
+  .btn { display: block; width: 100%; border: 0; border-radius: 12px; padding: 14px; font-size: 17px;
+    font-weight: 600; background: var(--accent); color: #fff; cursor: pointer; margin-top: 18px; }
+  .btn:active { transform: scale(.98); }
+  .btn.ghost { background: transparent; border: 1px solid var(--line); color: var(--text); font-weight: 500; }
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .btn-row .btn { margin-top: 8px; font-size: 15px; padding: 12px; }
+  .instr { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px;
+    font-size: 15px; line-height: 1.65; }
+  .instr p { margin: 0 0 8px; } .instr p:last-child { margin: 0; }
+  .tag { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 99px;
+    background: rgba(99,102,241,.15); color: var(--accent-2); font-weight: 600; margin-bottom: 8px; }
+  .tag.practice { background: rgba(251,191,36,.15); color: var(--warn); }
+  .demo { display: block; margin: 12px auto 0; width: 100%; max-width: 300px; }
+
+  /* Test screen */
+  #screen-test { padding: calc(6px + var(--safe-t)) 8px calc(8px + var(--safe-b)); height: 100dvh; }
+  .hud { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 44px; padding: 0 4px; }
+  .hud .stat { font-size: 12px; color: var(--muted); line-height: 1.2; }
+  .hud .stat b { display: block; font-size: 16px; color: var(--text); font-variant-numeric: tabular-nums; }
+  .hud .stat b.err { color: var(--err); }
+  .hud .abort { border: 1px solid var(--line); background: transparent; border-radius: 10px; padding: 6px 12px;
+    font-size: 14px; color: var(--muted); }
+  #board-wrap { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; }
+  #board { position: relative; background: #020617; border: 2px solid var(--line); border-radius: 14px;
+    overflow: hidden; touch-action: none; }
+  #board canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  #board.flash { border-color: var(--err); }
+  #countdown { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 96px; font-weight: 800; color: var(--accent-2); background: rgba(2,6,23,.92); }
+  #countdown.hide { display: none; }
+
+  /* Results */
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  .metric { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+  .metric span { display: block; font-size: 12px; color: var(--muted); }
+  .metric b { font-size: 19px; font-variant-numeric: tabular-nums; }
+  .part-title { font-size: 14px; font-weight: 700; margin: 14px 0 8px; color: var(--accent-2); }
+  .note { font-size: 12px; color: var(--warn); margin: 6px 0 0; }
+  .chart-box { position: relative; height: 240px; margin-top: 12px; background: var(--panel-2);
+    border: 1px solid var(--line); border-radius: 12px; padding: 8px; }
+  .toast { position: fixed; left: 50%; bottom: calc(24px + var(--safe-b)); transform: translateX(-50%);
+    background: #111827; border: 1px solid var(--line); padding: 10px 16px; border-radius: 10px;
+    font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- 1. Setup -->
+<section id="screen-setup" class="screen active">
+  <div class="card">
+    <h1>Trail Making Test</h1>
+    <p class="sub">Mobile touch version · tap or swipe without lifting your finger</p>
+
+    <label class="f" for="pid">Participant ID</label>
+    <input id="pid" type="text" placeholder="e.g. P001" autocomplete="off">
+
+    <div class="row">
+      <div><label class="f" for="age">Age</label><input id="age" type="number" inputmode="numeric" min="5" max="110"></div>
+      <div><label class="f" for="sex">Sex</label>
+        <select id="sex"><option value="">—</option><option value="F">Female</option><option value="M">Male</option><option value="O">Other</option></select></div>
+      <div><label class="f" for="edu">Education (yrs)</label><input id="edu" type="number" inputmode="numeric" min="0" max="30"></div>
+    </div>
+
+    <label class="f">Parts</label>
+    <div class="seg">
+      <input type="radio" name="parts" id="p-ab" value="AB" checked><label for="p-ab">A → B</label>
+      <input type="radio" name="parts" id="p-a" value="A"><label for="p-a">A only</label>
+      <input type="radio" name="parts" id="p-b" value="B"><label for="p-b">B only</label>
+    </div>
+
+    <label class="f">Number of circles</label>
+    <div class="seg">
+      <input type="radio" name="len" id="l-25" value="25" checked><label for="l-25">25 (standard)</label>
+      <input type="radio" name="len" id="l-12" value="12"><label for="l-12">12 (short)</label>
+    </div>
+
+    <label class="check"><input type="checkbox" id="practice" checked>8-circle practice before each part (not scored)</label>
+
+    <button class="btn" id="btn-begin">Start</button>
+  </div>
+</section>
+
+<!-- 2. Instructions -->
+<section id="screen-intro" class="screen">
+  <div class="card">
+    <span class="tag" id="intro-tag">Part A</span>
+    <h2 id="intro-title">Connect the numbers in order</h2>
+    <div class="instr" id="intro-body"></div>
+    <svg class="demo" id="intro-demo" viewBox="0 0 300 90" aria-hidden="true"></svg>
+    <button class="btn" id="btn-go">I'm ready</button>
+    <button class="btn ghost" id="btn-intro-back">Back to setup</button>
+  </div>
+</section>
+
+<!-- 3. Test -->
+<section id="screen-test" class="screen">
+  <div class="hud">
+    <div class="stat">Done <b id="hud-progress">0/25</b></div>
+    <div class="stat">Errors <b id="hud-errors" class="err">0</b></div>
+    <div class="stat">Time <b id="hud-time">0.0 s</b></div>
+    <button class="abort" id="btn-abort">Abort</button>
+  </div>
+  <div id="board-wrap">
+    <div id="board">
+      <canvas id="cv"></canvas>
+      <div id="countdown" class="hide">3</div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. Results -->
+<section id="screen-results" class="screen">
+  <div class="card">
+    <span class="tag">Test complete</span>
+    <h2 id="res-title">Results</h2>
+    <div id="res-body"></div>
+    <div class="chart-box"><canvas id="rt-chart"></canvas></div>
+    <div class="btn-row" style="margin-top:10px">
+      <button class="btn ghost" id="btn-csv-sum">Summary CSV</button>
+      <button class="btn ghost" id="btn-csv-trans">Transitions CSV</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost" id="btn-json">JSON (full)</button>
+      <button class="btn ghost" id="btn-retest">Retest same person</button>
+    </div>
+    <button class="btn" id="btn-new">Next participant</button>
+  </div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+
+// ---------- Constants ----------
+const PRACTICE_N = 8;
+const COLORS = {
+  done: '#312e81', doneStroke: '#818cf8', doneText: '#c7d2fe',
+  node: '#1e293b', nodeStroke: '#64748b', nodeText: '#f1f5f9',
+  err: '#9f1239', errStroke: '#f43f5e', hint: '#4f46e5', hintStroke: '#c7d2fe',
+  path: '#6366f1', live: 'rgba(129,140,248,.55)', caption: '#94a3b8'
+};
+
+// ---------- State ----------
+const S = {
+  cfg: null,       // participant info and settings
+  queue: [],       // pending stages [{part, practice}]
+  stage: 0,
+  results: {},     // results.A / results.B (scored runs only)
+  run: null,       // stage currently in progress
+  wakeLock: null
+};
+
+// ---------- Reproducible RNG ----------
+function mulberry32(seed) {
+  return function () {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function makeSequence(part, n) {
+  const seq = [];
+  for (let i = 0; i < n; i++) {
+    if (part === 'A') seq.push(String(i + 1));
+    else seq.push(i % 2 === 0 ? String(i / 2 + 1) : String.fromCharCode(65 + (i - 1) / 2));
+  }
+  return seq;
+}
+
+// Coordinates use board width = 1: u ∈ [0,1], v ∈ [0,H]. Layout survives rotation and resizing.
+function makeLayout(n, H, rU, rng) {
+  const pad = rU * 1.35;
+  let minDist = rU * 2.6;
+  for (let shrink = 0; shrink < 12; shrink++) {
+    for (let restart = 0; restart < 30; restart++) {
+      const pts = [];
+      let attempts = 0;
+      while (pts.length < n && attempts < 4000) {
+        attempts++;
+        const u = pad + rng() * (1 - 2 * pad);
+        const v = pad + rng() * (H - 2 * pad);
+        if (pts.every((p) => Math.hypot(p.u - u, p.v - v) >= minDist)) pts.push({ u, v });
+      }
+      if (pts.length === n) return pts;
+    }
+    minDist *= 0.95; // shrink spacing only if nothing fits, so a full layout is always produced
+  }
+  throw new Error('Could not generate layout');
+}
+
+// ---------- Screen switching ----------
+function show(name) {
+  document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('active', s.id === 'screen-' + name));
+  document.body.classList.toggle('testing', name === 'test');
+  window.scrollTo(0, 0);
+}
+
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+function deviceType() {
+  const ua = navigator.userAgent;
+  if (/iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'iOS';
+  if (/Android/.test(ua)) return 'Android';
+  return 'Desktop';
+}
+
+// ---------- Setup → queue ----------
+$('btn-begin').addEventListener('click', () => {
+  const val = (name) => document.querySelector(`input[name=${name}]:checked`).value;
+  const num = (id) => { const v = $(id).value.trim(); return v === '' ? '' : Number(v); };
+  S.cfg = {
+    participant_id: $('pid').value.trim() || 'anon_' + Date.now().toString(36),
+    age: num('age'), sex: $('sex').value, education_years: num('edu'),
+    parts: val('parts'), n: Number(val('len')), practice: $('practice').checked,
+    device: deviceType(), session_time: new Date().toISOString()
+  };
+  buildQueue();
+});
+
+function buildQueue() {
+  S.queue = [];
+  S.results = {};
+  for (const part of S.cfg.parts.split('')) {
+    if (S.cfg.practice) S.queue.push({ part, practice: true });
+    S.queue.push({ part, practice: false });
+  }
+  S.stage = 0;
+  showIntro();
+}
+
+// ---------- Instructions ----------
+function showIntro() {
+  const { part, practice } = S.queue[S.stage];
+  const n = practice ? PRACTICE_N : S.cfg.n;
+  const seq = makeSequence(part, n);
+  const last = seq[seq.length - 1];
+  $('intro-tag').textContent = `Part ${part} · ${practice ? 'Practice' : 'Test'}`;
+  $('intro-tag').className = 'tag' + (practice ? ' practice' : '');
+  $('intro-title').textContent = part === 'A' ? 'Connect the numbers in order' : 'Alternate numbers and letters';
+  const rule = part === 'A'
+    ? `<p>The screen shows circles numbered <b>1 to ${last}</b>. Start at <b>1</b> and connect them in order, 1 → 2 → 3 …, until you reach <b>${last}</b>.</p>`
+    : `<p>Start at <b>1</b> and <b>alternate</b> between numbers and letters: 1 → A → 2 → B → 3 → C …, until you reach <b>${last}</b>.</p>`;
+  const how = '<p>You can tap each circle, or slide your finger from circle to circle <b>without lifting it</b>.</p>';
+  const err = practice
+    ? '<p>This is practice. If you make a mistake, the next correct circle will light up.</p>'
+    : '<p>Work <b>as quickly and accurately as you can</b>. A wrong circle turns red; continue from the last correct circle.</p>';
+  $('intro-body').innerHTML = rule + how + err;
+  drawDemo(part);
+  $('btn-go').textContent = practice ? 'Start practice' : 'Start test';
+  show('intro');
+}
+
+function drawDemo(part) {
+  const labels = part === 'A' ? ['1', '2', '3', '4', '5'] : ['1', 'A', '2', 'B', '3'];
+  const xs = [30, 90, 150, 210, 270], ys = [55, 30, 60, 28, 55];
+  let svg = `<polyline points="${xs.map((x, i) => x + ',' + ys[i]).join(' ')}" fill="none" stroke="${COLORS.path}" stroke-width="3" stroke-linecap="round"/>`;
+  labels.forEach((l, i) => {
+    svg += `<circle cx="${xs[i]}" cy="${ys[i]}" r="16" fill="${COLORS.done}" stroke="${COLORS.doneStroke}" stroke-width="2"/>` +
+      `<text x="${xs[i]}" y="${ys[i] + 5}" text-anchor="middle" font-size="15" font-weight="700" fill="${COLORS.doneText}">${l}</text>`;
+  });
+  $('intro-demo').innerHTML = svg;
+}
+
+$('btn-intro-back').addEventListener('click', () => show('setup'));
+$('btn-go').addEventListener('click', startStage);
+
+// ---------- Test engine ----------
+const board = $('board');
+const cv = $('cv');
+const ctx = cv.getContext('2d');
+
+function startStage() {
+  const { part, practice } = S.queue[S.stage];
+  const n = practice ? PRACTICE_N : S.cfg.n;
+  show('test');
+
+  // Lock aspect ratio by orientation at start: portrait 3:4, landscape 4:3
+  const wrap = $('board-wrap').getBoundingClientRect();
+  const aspect = wrap.width < wrap.height ? 3 / 4 : 4 / 3; // width/height
+  const H = 1 / aspect;
+  const { w, h } = fitSize(aspect);
+  const rPx = Math.min(30, Math.max(16, Math.sqrt((w * h) / n) * 0.25));
+  const rU = rPx / w;
+  const seed = (Math.random() * 2 ** 31) >>> 0;
+  const seq = makeSequence(part, n);
+  const nodes = makeLayout(n, H, rU, mulberry32(seed)).map((p, i) => ({ ...p, label: seq[i] }));
+
+  S.run = {
+    part, practice, n, seq, nodes, aspect, H, rU, seed,
+    idx: 0, t0: null, lastT: null, init_ms: null, init_errors: 0, pendingErrors: 0,
+    errors: 0, errorEvents: [], transitions: [],
+    pointer: { down: false, x: 0, y: 0 }, lastHit: -1, flash: -1, flashUntil: 0, hint: false,
+    interrupted: false, active: false, raf: 0
+  };
+  resizeBoard();
+  updateHud();
+  requestWakeLock();
+  countdown(() => {
+    const r = S.run;
+    r.t0 = performance.now();
+    r.lastT = r.t0;
+    r.active = true;
+    loop();
+  });
+}
+
+function fitSize(aspect) {
+  const rect = $('board-wrap').getBoundingClientRect();
+  let w = rect.width, h = rect.width / aspect;
+  if (h > rect.height) { h = rect.height; w = h * aspect; }
+  return { w: Math.floor(w), h: Math.floor(h) };
+}
+
+function resizeBoard() {
+  const r = S.run;
+  if (!r) return;
+  const { w, h } = fitSize(r.aspect);
+  board.style.width = w + 'px';
+  board.style.height = h + 'px';
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  cv.width = Math.round(w * dpr);
+  cv.height = Math.round(h * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // draw in CSS px
+  r.scale = w; // 1 unit (board width) = w CSS px
+  draw();
+}
+window.addEventListener('resize', resizeBoard);
+window.addEventListener('orientationchange', () => setTimeout(resizeBoard, 250));
+
+function countdown(done) {
+  const el = $('countdown');
+  let k = 3;
+  el.textContent = k; el.classList.remove('hide');
+  const tick = () => {
+    k--;
+    if (k > 0) { el.textContent = k; setTimeout(tick, 700); }
+    else { el.classList.add('hide'); done(); }
+  };
+  setTimeout(tick, 700);
+}
+
+function loop() {
+  const r = S.run;
+  if (!r || !r.active) return;
+  $('hud-time').textContent = ((performance.now() - r.t0) / 1000).toFixed(1) + ' s';
+  draw();
+  r.raf = requestAnimationFrame(loop);
+}
+
+function updateHud() {
+  const r = S.run;
+  $('hud-progress').textContent = `${r.idx}/${r.n}`;
+  $('hud-errors').textContent = r.errors;
+  if (!r.active) $('hud-time').textContent = '0.0 s';
+}
+
+// ---------- Drawing ----------
+function draw() {
+  const r = S.run;
+  if (!r) return;
+  const s = r.scale; // board units → CSS px
+  ctx.clearRect(0, 0, s, s * r.H);
+  if (r.t0 === null) return; // hide circles during countdown
+
+  // Completed path
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if (r.idx > 1) {
+    ctx.beginPath();
+    ctx.moveTo(r.nodes[0].u * s, r.nodes[0].v * s);
+    for (let i = 1; i < r.idx; i++) ctx.lineTo(r.nodes[i].u * s, r.nodes[i].v * s);
+    ctx.strokeStyle = COLORS.path; ctx.lineWidth = 3.5; ctx.stroke();
+  }
+  // Live line while dragging
+  if (r.pointer.down && r.idx > 0) {
+    const a = r.nodes[r.idx - 1];
+    ctx.beginPath(); ctx.moveTo(a.u * s, a.v * s); ctx.lineTo(r.pointer.x * s, r.pointer.y * s);
+    ctx.strokeStyle = COLORS.live; ctx.lineWidth = 3; ctx.stroke();
+  }
+
+  const now = performance.now();
+  const flashOn = r.flash >= 0 && now < r.flashUntil;
+  board.classList.toggle('flash', flashOn);
+  const rad = r.rU * s;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = `700 ${Math.round(rad * 0.9)}px system-ui, sans-serif`;
+
+  r.nodes.forEach((nd, i) => {
+    let fill = COLORS.node, stroke = COLORS.nodeStroke, text = COLORS.nodeText, lw = 2;
+    if (i < r.idx) { fill = COLORS.done; stroke = COLORS.doneStroke; text = COLORS.doneText; }
+    else if (flashOn && i === r.flash) { fill = COLORS.err; stroke = COLORS.errStroke; lw = 4; }
+    else if (r.practice && r.hint && i === r.idx) { fill = COLORS.hint; stroke = COLORS.hintStroke; lw = 3; }
+    ctx.beginPath(); ctx.arc(nd.u * s, nd.v * s, rad, 0, Math.PI * 2);
+    ctx.fillStyle = fill; ctx.fill();
+    ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke();
+    ctx.fillStyle = text;
+    ctx.fillText(nd.label, nd.u * s, nd.v * s + 1);
+  });
+
+  // Start / End labels (as on the paper version)
+  ctx.font = '600 11px system-ui, sans-serif';
+  ctx.fillStyle = COLORS.caption;
+  const cap = (nd, txt) => {
+    const x = nd.u * s, y = nd.v * s;
+    const below = y + rad + 12 < s * r.H;
+    ctx.fillText(txt, x, below ? y + rad + 9 : y - rad - 9);
+  };
+  cap(r.nodes[0], 'Start');
+  cap(r.nodes[r.n - 1], 'End');
+}
+
+// ---------- Input (tap + continuous swipe) ----------
+function toBoard(e) {
+  const rect = cv.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / rect.width, y: ((e.clientY - rect.top) / rect.width) };
+}
+
+function probe(x, y, t) {
+  const r = S.run;
+  // Pick the nearest circle (avoids misses where hit areas overlap)
+  const hitR = Math.max(r.rU * 1.2, 22 / r.scale);
+  let best = -1, bestD = Infinity;
+  r.nodes.forEach((nd, i) => {
+    const d = Math.hypot(nd.u - x, nd.v - y);
+    if (d < bestD) { bestD = d; best = i; }
+  });
+  if (bestD > hitR) { r.lastHit = -1; return; }
+  if (best === r.lastHit) return; // finger resting on the same circle counts once
+  r.lastHit = best;
+  if (best === r.idx) correct(t);
+  else if (best > r.idx) wrong(best, t);
+  // Already-connected circles: ignore
+}
+
+function correct(t) {
+  const r = S.run;
+  if (r.idx === 0) {
+    r.init_ms = t - r.t0;
+    r.init_errors = r.pendingErrors;
+  } else {
+    const a = r.nodes[r.idx - 1], b = r.nodes[r.idx];
+    r.transitions.push({
+      transition_index: r.idx,
+      from_node: r.seq[r.idx - 1], to_node: r.seq[r.idx],
+      distance_norm: Math.hypot(a.u - b.u, a.v - b.v) / Math.hypot(1, r.H),
+      rt_ms: t - r.lastT,
+      errors: r.pendingErrors
+    });
+  }
+  r.pendingErrors = 0;
+  r.lastT = t;
+  r.hint = false;
+  r.idx++;
+  updateHud();
+  if (r.idx >= r.n) finishStage();
+}
+
+function wrong(i, t) {
+  const r = S.run;
+  r.errors++;
+  r.pendingErrors++;
+  r.errorEvents.push({ t_ms: Math.round(t - r.t0), expected: r.seq[r.idx], touched: r.seq[i] });
+  r.flash = i;
+  r.flashUntil = performance.now() + 350;
+  if (r.practice) r.hint = true;
+  if (navigator.vibrate) navigator.vibrate(60);
+  updateHud();
+}
+
+cv.addEventListener('pointerdown', (e) => {
+  const r = S.run;
+  if (!r || !r.active) return;
+  e.preventDefault();
+  try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+  const p = toBoard(e);
+  r.pointer = { down: true, x: p.x, y: p.y };
+  r.lastHit = -1;
+  probe(p.x, p.y, e.timeStamp);
+});
+
+cv.addEventListener('pointermove', (e) => {
+  const r = S.run;
+  if (!r || !r.active || !r.pointer.down) return;
+  // Use coalesced events so fast swipes don't skip circles
+  const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+  for (const ev of (evs.length ? evs : [e])) {
+    if (!r.active) break;
+    const p = toBoard(ev);
+    r.pointer.x = p.x; r.pointer.y = p.y;
+    probe(p.x, p.y, ev.timeStamp);
+  }
+});
+
+const release = () => { if (S.run) { S.run.pointer.down = false; S.run.lastHit = -1; } };
+cv.addEventListener('pointerup', release);
+cv.addEventListener('pointercancel', release);
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && S.run && S.run.active) S.run.interrupted = true;
+});
+
+$('btn-abort').addEventListener('click', () => {
+  if (!confirm('Abort this session? Data will not be saved.')) return;
+  stopRun();
+  show('setup');
+});
+
+function stopRun() {
+  if (S.run) { S.run.active = false; cancelAnimationFrame(S.run.raf); }
+  board.classList.remove('flash');
+  releaseWakeLock();
+}
+
+async function requestWakeLock() {
+  try { if ('wakeLock' in navigator) S.wakeLock = await navigator.wakeLock.request('screen'); } catch (_) {}
+}
+function releaseWakeLock() {
+  try { if (S.wakeLock) S.wakeLock.release(); } catch (_) {}
+  S.wakeLock = null;
+}
+
+// ---------- Stage end ----------
+function summarize(r) {
+  const rts = r.transitions.map((x) => x.rt_ms);
+  const mean = rts.reduce((a, b) => a + b, 0) / rts.length;
+  const sd = rts.length > 1 ? Math.sqrt(rts.reduce((a, v) => a + (v - mean) ** 2, 0) / (rts.length - 1)) : 0;
+  return {
+    time_s: (r.lastT - r.t0) / 1000,
+    errors: r.errors,
+    init_ms: r.init_ms,
+    mean_rt_ms: mean,
+    rt_sd_ms: sd,
+    rt_cv: sd / mean,
+    interrupted: r.interrupted
+  };
+}
+
+function finishStage() {
+  const r = S.run;
+  stopRun();
+  draw();
+  if (!r.practice) {
+    S.results[r.part] = {
+      summary: summarize(r), transitions: r.transitions, errorEvents: r.errorEvents,
+      seed: r.seed, aspect: r.aspect, board_px: [Math.round(r.scale), Math.round(r.scale * r.H)],
+      nodes: r.nodes.map((n) => ({ label: n.label, u: +n.u.toFixed(4), v: +n.v.toFixed(4) }))
+    };
+  }
+  setTimeout(() => {
+    S.stage++;
+    if (S.stage < S.queue.length) showIntro();
+    else showResults();
+  }, 500);
+}
+
+// ---------- Results ----------
+let chart = null;
+const f1 = (x) => (x == null || isNaN(x) ? '—' : x.toFixed(1));
+const f0 = (x) => (x == null || isNaN(x) ? '—' : Math.round(x).toString());
+
+function showResults() {
+  const { A, B } = S.results;
+  $('res-title').textContent = `Participant ${S.cfg.participant_id}`;
+  let html = '';
+  for (const [part, res] of [['A', A], ['B', B]]) {
+    if (!res) continue;
+    const s = res.summary;
+    html += `<div class="part-title">Part ${part} (${S.cfg.n} circles)</div><div class="grid">
+      <div class="metric"><span>Completion time</span><b>${s.time_s.toFixed(2)} s</b></div>
+      <div class="metric"><span>Errors</span><b>${s.errors}</b></div>
+      <div class="metric"><span>Mean inter-node RT</span><b>${f0(s.mean_rt_ms)} ms</b></div>
+      <div class="metric"><span>RT SD / CV</span><b>${f0(s.rt_sd_ms)} / ${s.rt_cv.toFixed(2)}</b></div>
+      <div class="metric"><span>Initiation (to 1)</span><b>${f0(s.init_ms)} ms</b></div>
+    </div>`;
+    if (s.interrupted) html += '<p class="note">⚠ The app was left during the test; this record may be unreliable.</p>';
+  }
+  if (A && B) {
+    const d = B.summary.time_s - A.summary.time_s, q = B.summary.time_s / A.summary.time_s;
+    html += `<div class="part-title">Derived indices</div><div class="grid">
+      <div class="metric"><span>B − A</span><b>${d.toFixed(2)} s</b></div>
+      <div class="metric"><span>B / A</span><b>${q.toFixed(2)}</b></div></div>`;
+  }
+  $('res-body').innerHTML = html;
+  show('results');
+  renderChart();
+}
+
+function renderChart() {
+  if (chart) chart.destroy();
+  if (typeof Chart === 'undefined') return; // skip chart when offline
+  const sets = [];
+  const maxLen = Math.max(...Object.values(S.results).map((r) => r.transitions.length));
+  const palette = { A: '#818cf8', B: '#f59e0b' };
+  for (const part of ['A', 'B']) {
+    const res = S.results[part];
+    if (!res) continue;
+    sets.push({
+      label: 'Part ' + part, data: res.transitions.map((t) => Math.round(t.rt_ms)),
+      borderColor: palette[part], backgroundColor: palette[part], borderWidth: 2, pointRadius: 2.5, tension: 0.2,
+      _trans: res.transitions
+    });
+  }
+  chart = new Chart($('rt-chart'), {
+    type: 'line',
+    data: { labels: Array.from({ length: maxLen }, (_, i) => i + 1), datasets: sets },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        y: { beginAtZero: true, grid: { color: 'rgba(51,65,85,.5)' }, ticks: { color: '#94a3b8' },
+          title: { display: true, text: 'Inter-node RT (ms)', color: '#94a3b8' } },
+        x: { grid: { display: false }, ticks: { color: '#94a3b8', maxTicksLimit: 8 },
+          title: { display: true, text: 'Transition #', color: '#94a3b8' } }
+      },
+      plugins: {
+        legend: { labels: { color: '#e2e8f0', boxWidth: 12 } },
+        tooltip: { callbacks: { label: (c) => {
+          const t = c.dataset._trans[c.dataIndex];
+          return t ? `${c.dataset.label} ${t.from_node}→${t.to_node}: ${c.parsed.y} ms${t.errors ? ` (${t.errors} err)` : ''}` : '';
+        } } }
+      }
+    }
+  });
+}
+
+// ---------- Export (same columns as the simulated data, ready to merge) ----------
+function csvCell(v) {
+  if (v == null || v === '' || (typeof v === 'number' && isNaN(v))) return 'NA';
+  const s = typeof v === 'number' ? String(Math.round(v * 1000) / 1000) : String(v);
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function toCSV(header, rows) {
+  return '﻿' + [header.join(','), ...rows.map((r) => header.map((h) => csvCell(r[h])).join(','))].join('\n') + '\n';
+}
+function download(name, text, type) {
+  const blob = new Blob([text], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  toast('Downloaded ' + name);
+}
+const fileBase = () => `TMT_${S.cfg.participant_id}_${S.cfg.session_time.slice(0, 19).replace(/[:T]/g, '-')}`;
+
+const SUMMARY_COLS = ['participant_id', 'age', 'sex', 'education_years', 'device', 'session_time', 'n_nodes',
+  'A_time_s', 'A_errors', 'A_init_ms', 'A_mean_rt_ms', 'A_rt_sd_ms', 'A_rt_cv', 'A_interrupted',
+  'B_time_s', 'B_errors', 'B_init_ms', 'B_mean_rt_ms', 'B_rt_sd_ms', 'B_rt_cv', 'B_interrupted',
+  'B_minus_A_s', 'B_div_A'];
+const TRANS_COLS = ['participant_id', 'part', 'n_nodes', 'transition_index', 'from_node', 'to_node',
+  'distance_norm', 'rt_ms', 'errors'];
+
+function summaryRow() {
+  const c = S.cfg;
+  const row = { participant_id: c.participant_id, age: c.age, sex: c.sex, education_years: c.education_years,
+    device: c.device, session_time: c.session_time, n_nodes: c.n };
+  for (const p of ['A', 'B']) {
+    const s = S.results[p] && S.results[p].summary;
+    if (!s) continue;
+    for (const k of ['time_s', 'errors', 'init_ms', 'mean_rt_ms', 'rt_sd_ms', 'rt_cv']) row[`${p}_${k}`] = s[k];
+    row[`${p}_interrupted`] = s.interrupted ? 1 : 0;
+  }
+  if (S.results.A && S.results.B) {
+    row.B_minus_A_s = row.B_time_s - row.A_time_s;
+    row.B_div_A = row.B_time_s / row.A_time_s;
+  }
+  return row;
+}
+
+$('btn-csv-sum').addEventListener('click', () =>
+  download(fileBase() + '_summary.csv', toCSV(SUMMARY_COLS, [summaryRow()]), 'text/csv;charset=utf-8'));
+
+$('btn-csv-trans').addEventListener('click', () => {
+  const rows = [];
+  for (const p of ['A', 'B']) {
+    const res = S.results[p];
+    if (!res) continue;
+    res.transitions.forEach((t) => rows.push({ participant_id: S.cfg.participant_id, part: p, n_nodes: S.cfg.n, ...t }));
+  }
+  download(fileBase() + '_transitions.csv', toCSV(TRANS_COLS, rows), 'text/csv;charset=utf-8');
+});
+
+$('btn-json').addEventListener('click', () => {
+  const data = {
+    assessment: 'Trail Making Test (digital, touch)', version: 2,
+    config: S.cfg, summary: summaryRow(), parts: S.results,
+    screen: { w: screen.width, h: screen.height, dpr: window.devicePixelRatio }, userAgent: navigator.userAgent
+  };
+  download(fileBase() + '.json', JSON.stringify(data, null, 2), 'application/json');
+});
+
+$('btn-retest').addEventListener('click', () => {
+  S.cfg.session_time = new Date().toISOString();
+  buildQueue();
+});
+
+$('btn-new').addEventListener('click', () => {
+  ['pid', 'age', 'edu'].forEach((id) => ($(id).value = ''));
+  $('sex').value = '';
+  show('setup');
+});
+</script>
+</body>
+</html>
