@@ -1,0 +1,6 @@
+"score","AUC_HC_vs_MCI"
+"B_time_s",0.804
+"-theta_B",0.77
+"B_minus_A_s",0.768
+"-theta_B_given_A",0.646
+"B_div_A",0.635

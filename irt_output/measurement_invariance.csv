@@ -1,0 +1,25 @@
+"part","grouping","groups","step","chisq","df","cfi","rmsea","d_cfi","d_rmsea","holds"
+"A","device","Android n=910; iOS n=1090","configural",568.493,504,0.996,0.011,NA,NA,NA
+"A","device","Android n=910; iOS n=1090","metric",587.081,527,0.997,0.011,2e-04,-6e-04,TRUE
+"A","device","Android n=910; iOS n=1090","scalar",614.272,550,0.996,0.011,-2e-04,1e-04,TRUE
+"A","device","Android n=910; iOS n=1090","strict",641.692,574,0.996,0.011,-2e-04,0,TRUE
+"A","age_band","<=64 n=583; >=75 n=847; 65-74 n=570","configural",802.423,756,0.996,0.01,NA,NA,NA
+"A","age_band","<=64 n=583; >=75 n=847; 65-74 n=570","metric",850.452,802,0.996,0.01,-2e-04,-1e-04,TRUE
+"A","age_band","<=64 n=583; >=75 n=847; 65-74 n=570","scalar",901.327,848,0.995,0.01,-4e-04,2e-04,TRUE
+"A","age_band","<=64 n=583; >=75 n=847; 65-74 n=570","strict",1890.328,896,0.913,0.041,-0.0827,0.0311,FALSE
+"A","education","<=9 years n=640; >9 years n=1360","configural",551.025,504,0.997,0.01,NA,NA,NA
+"A","education","<=9 years n=640; >9 years n=1360","metric",584.214,527,0.997,0.01,-6e-04,8e-04,TRUE
+"A","education","<=9 years n=640; >9 years n=1360","scalar",605.476,550,0.997,0.01,1e-04,-4e-04,TRUE
+"A","education","<=9 years n=640; >9 years n=1360","strict",804.913,574,0.986,0.02,-0.0104,0.01,FALSE
+"B","device","Android n=910; iOS n=1090","configural",613.666,504,0.996,0.015,NA,NA,NA
+"B","device","Android n=910; iOS n=1090","metric",632.809,527,0.996,0.014,1e-04,-6e-04,TRUE
+"B","device","Android n=910; iOS n=1090","scalar",654.728,550,0.996,0.014,0,-4e-04,TRUE
+"B","device","Android n=910; iOS n=1090","strict",690.668,574,0.996,0.014,-4e-04,5e-04,TRUE
+"B","age_band","<=64 n=583; >=75 n=847; 65-74 n=570","configural",826.288,756,0.996,0.012,NA,NA,NA
+"B","age_band","<=64 n=583; >=75 n=847; 65-74 n=570","metric",878.651,802,0.996,0.012,-3e-04,2e-04,TRUE
+"B","age_band","<=64 n=583; >=75 n=847; 65-74 n=570","scalar",931.869,848,0.996,0.012,-4e-04,2e-04,TRUE
+"B","age_band","<=64 n=583; >=75 n=847; 65-74 n=570","strict",1906.867,896,0.948,0.041,-0.0476,0.029,FALSE
+"B","education","<=9 years n=640; >9 years n=1360","configural",555.095,504,0.998,0.01,NA,NA,NA
+"B","education","<=9 years n=640; >9 years n=1360","metric",582.152,527,0.998,0.01,-1e-04,2e-04,TRUE
+"B","education","<=9 years n=640; >9 years n=1360","scalar",599.081,550,0.998,0.009,2e-04,-8e-04,TRUE
+"B","education","<=9 years n=640; >9 years n=1360","strict",867.25,574,0.989,0.023,-0.0088,0.0132,TRUE
