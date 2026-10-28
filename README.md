@@ -1,13 +1,26 @@
 # Continuous-response IRT for a smartphone Trail Making Test
 
+## Hello World, I'm Muriel.
+
+It started from 2 questions. The first I was asked " How can AI help Clinical Psychologist/Neuropsychologist? " in INS conference this February. 
+To explore this question, I learned vibe coding and learned to work with my AIs. 
+21 October, last Wednesday I attended the online webinar of IRT. 
+Then another question triggered me to do the project is **how to run item response theory (IRT) in R with continuous variables**:
+Tried to explore this question, I started the little project on the Typhoon Friday. 
+Although it is not impeccable, I hope it is a good enough attempt. 
+Please allow me to invite you to have a look. :)
+
 ## About this project
+This project explores **how to run item response theory (IRT) in R with continuous variables**: 
+here, the time taken for each segment of the Trail Making Test (TMT).
 
-This project explores **how to run item response theory (IRT) in R when the responses are continuous**: here, the time taken for each segment of the Trail Making Test (TMT).
+To have data to work with, I asked AI (Claude, Gemini and Perplexity) to build a smartphone TMT web app and to simulate 2,000 participants. 
+The R analysis in this repository was also written with AI help.
 
-To have data to work with, I asked AI assistants (Claude and Gemini) to build a smartphone TMT web app and to simulate 2,000 participants. The R analysis in this repository was also written with AI help.
-
-- You can try the app here: https://pwsunmuriel-cool.github.io/tmt/tmt_mobile_en.html
+- The app is here: https://pwsunmuriel-cool.github.io/tmt/tmt_mobile_en.html
 - A summary of the whole project, including the simulation results: https://pwsunmuriel-cool.github.io/tmt/site/tmt_project_en.html
+
+**No data is saved or transmitted to any server. You can download your test results directly to your device after finishing**.
 
 In this app **each participant gets a randomly generated layout**, so a given transition (e.g. circle 7 → 8) has a different distance, direction and set of nearby circles for each person. The "item" is the position in the sequence (and, in Part B, number→letter vs letter→number), not a fixed stimulus.
 
@@ -30,8 +43,8 @@ Not yet done: distribution checks, local dependence (Yen's Q3, with data-specifi
 
 ## Important: the data are simulated
 
-- **No real participants.** 2,000 simulated people aged 55–89, healthy controls (HC) 1,489, MCI 355, dementia (labelled AD) 156.
-- Completion times are calibrated to Tombaugh (2004) paper-and-pencil norms. MCI and dementia rates follow Sun et al. (2014) for Taiwan; ages 55–64 are extrapolated. Errors follow Ashendorf et al. (2008).
+- **No real participants.** 2,000 simulated people aged 55–89, healthy controls (HC) 1,489, MCI 355, dementia 156.
+- Completion times are calibrated to Tombaugh (2004) paper-and-pencil norms. MCI and dementia rates use the age-group estimates in Sun et al. (2014) Table 2 for Taiwan (both sexes, checked), placed at age-group midpoints and linearly interpolated; ages 55–64 are extrapolated, and an education multiplier is applied on top, so the final rates no longer match the table exactly. Sun's figures are all-cause dementia (including very mild dementia), so the group is labelled "Dementia", not AD. Errors follow Ashendorf et al. (2008).
 - Each person's 24 transition times are built from one latent time per part, so **IRT results on these data largely reflect the simulation's own assumptions** (high reliability, clean fit). They show that the code runs, not that the test is good.
 
 ## Results on the simulated data
@@ -73,9 +86,9 @@ source("irt_tmt.R")           # about 3 minutes; set RUN_DIF <- FALSE to skip th
 
 ## Known issues in the app (not yet fixed)
 
-- In swipe mode, crossing an unvisited circle on the way to the correct one counts as an error. Paper-test instructions do not clearly cover this case, so the app's own rule still has to be decided (for example, only a selected circle counts).
-- No time limits. Stop rules differ across protocols (for example, CENTER-TBI stops Part A at 100 s and Part B at 300 s); 150 s / 300 s would be this project's own choice.
-- Tap vs swipe is not recorded per transition. Tapping may change A, B and B−A compared with drawing, but the direction and size are not established for this interface. The simulation does not build in such an effect.
+- In swipe mode, crossing an unvisited circle on the way to the correct one counts as an error. The NACC UDS v3 instructions (Form C2, p. 42) say that a line drawn through another circle "while clearly on the way to the next circle" should be noted but not counted as an error of commission. Other protocols do not define it clearly. For the app, the plan is that only an explicitly selected circle counts.
+- No time limits. NACC UDS v3 Form C2 (p. 40) sets a maximum of 150 s for Part A and 300 s for Part B; other protocols differ (for example, CENTER-TBI: 100 s / 300 s).
+- Tap vs swipe is not recorded per transition. In two published phone tapping versions, the difference between mean B and mean A times was much smaller than on paper: Shvetz et al. (2021), mindLAMP Jewels Trail Test, 7.3 s vs 40.2 s; Zhou et al. (2025), 13-target ResearchKit app, 5.2 s vs 47.0 s. These figures are differences between reported means, not B−A results reported by the authors. Both apps also changed other things (shape alternation instead of letters, error penalties, test length), so the smaller gap cannot be attributed to tapping alone, and its size for this app is unknown. The simulation does not build in such an effect.
 - Part B uses English letters A–L, which may not suit older Taiwanese adults with little schooling.
 
 ## Key references
@@ -86,6 +99,9 @@ source("irt_tmt.R")           # about 3 minutes; set RUN_DIF <- FALSE to skip th
 - Woods, D. L., Wyma, J. M., Herron, T. J., & Yund, E. W. (2015). The effects of aging, malingering, and traumatic brain injury on computerized trail-making test performance. *PLoS ONE, 10*(6), e0124345. https://doi.org/10.1371/journal.pone.0124345 (path length vs segment time; mouse-based computerized TMT, not touch)
 - van der Linden, W. J. (2006). A lognormal model for response times on test items. *Journal of Educational and Behavioral Statistics, 31*(2), 181–204. https://doi.org/10.3102/10769986031002181
 - van der Linden, W. J. (2007). A hierarchical framework for modeling speed and accuracy on test items. *Psychometrika, 72*(3), 287–308. https://doi.org/10.1007/s11336-006-1478-z
+- Shvetz, C., Gu, F., Drodge, J., Torous, J., & Guimond, S. (2021). Validation of an ecological momentary assessment to measure processing speed and executive function in schizophrenia. *npj Schizophrenia, 7*, Article 64. https://doi.org/10.1038/s41537-021-00194-9
+- Zhou, S., Brady, B., & Anstey, K. J. (2025). Criterion validity of five open-source app-based cognitive and sensory tasks in an Australian adult life course sample aged 18 to 82: Labs without walls. *Behavior Research Methods, 57*(2), Article 69. https://doi.org/10.3758/s13428-024-02583-1
+- National Alzheimer's Coordinating Center (2015). UDS v3.0 Form C2 instructions. https://files.alz.washington.edu/documentation/uds3-np-c2-instructions.pdf
 - Chen, F. F. (2007). Sensitivity of goodness of fit indexes to lack of measurement invariance. *Structural Equation Modeling, 14*(3), 464–504. https://doi.org/10.1080/10705510701301834
 - Yen, W. M. (1984). Effects of local item dependence on the fit and equating performance of the three-parameter logistic model. *Applied Psychological Measurement, 8*(2), 125–145. https://doi.org/10.1177/014662168400800201
 - Christensen, K. B., Makransky, G., & Horton, M. (2017). Critical values for Yen's Q3: Identification of local dependence in the Rasch model using residual correlations. *Applied Psychological Measurement*. https://doi.org/10.1177/0146621616677520

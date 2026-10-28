@@ -29,16 +29,16 @@ sex <- sample(c("F", "M"), N, replace = TRUE, prob = c(0.53, 0.47))
 education_years <- round(rnorm(N, mean = 16 - 0.10 * (age - 20), sd = 2.8))
 education_years <- pmin(pmax(education_years, 0), 22)
 
-# Cognitive status: HC / MCI / AD; prevalence rises with age, education is protective
+# Cognitive status: HC / MCI / Dementia; prevalence rises with age, education is protective
 a     <- age - 20
 age_mid <- c(57, 62, 67, 72, 77, 82, 87)   # Sun et al. (2014) Table 2; 55-64 extrapolated
 p_mci <- approx(age_mid, c(.080, .110, .139, .164, .220, .235, .262), xout = age, rule = 2)$y
-p_ad  <- approx(age_mid, c(.010, .020, .034, .035, .072, .130, .219), xout = age, rule = 2)$y
+p_dementia  <- approx(age_mid, c(.010, .020, .034, .035, .072, .130, .219), xout = age, rule = 2)$y
 edu_or <- exp(-0.08 * (education_years - (16 - 0.10 * a)))   # education vs same-age peers
 u     <- runif(N)
-group <- ifelse(u < p_ad * edu_or, "AD", ifelse(u < (p_ad + p_mci) * edu_or, "MCI", "HC"))
+group <- ifelse(u < p_dementia * edu_or, "Dementia", ifelse(u < (p_dementia + p_mci) * edu_or, "MCI", "HC"))
 mci   <- as.numeric(group == "MCI")
-ad    <- as.numeric(group == "AD")
+dem    <- as.numeric(group == "Dementia")
 
 device       <- sample(c("iOS", "Android"), N, replace = TRUE, prob = c(0.55, 0.45))
 session_time <- format(as.POSIXct("2026-01-05 09:00:00", tz = "UTC") +
@@ -49,20 +49,20 @@ participant_id <- sprintf("SIM%04d", seq_len(N))
 # Shared processing-speed latent factor z1 correlates A and B (residual r = .30)
 z1 <- rnorm(N); z2 <- rnorm(N)
 logA <- log(21.8) + 0.004 * a + 0.00015 * a^2 - 0.020 * (education_years - 12) +
-        0.25 * mci + 0.60 * ad + 0.25 * z1
+        0.25 * mci + 0.60 * dem + 0.25 * z1
 logB <- log(49) - 0.0022 * a + 0.00027 * a^2 - 0.030 * (education_years - 12) +
-        0.35 * mci + 0.75 * ad + 0.32 * (0.30 * z1 + sqrt(1 - 0.30^2) * z2)
+        0.35 * mci + 0.75 * dem + 0.32 * (0.30 * z1 + sqrt(1 - 0.30^2) * z2)
 base_s <- list(A = exp(logA) * TAP_SPEED_FACTOR, B = exp(logB) * TAP_SPEED_FACTOR)
 
 # Error counts (Poisson); far more in B than A
 lambda <- list(
-  A = exp(-3.1 + 0.020 * a + 0.1 * mci + 0.1 * ad),
-  B = exp(-1.8 + 0.020 * a + 0.70 * mci + 0.80 * ad - 0.04 * (education_years - 12))
+  A = exp(-3.1 + 0.020 * a + 0.1 * mci + 0.1 * dem),
+  B = exp(-1.8 + 0.020 * a + 0.70 * mci + 0.80 * dem - 0.04 * (education_years - 12))
 )
 
 # Intra-individual variability (IIV) and attentional lapses: larger with age and impairment
-iiv     <- pmax(0.12, 0.22 + 0.003 * a + 0.08 * mci + 0.18 * ad + rnorm(N, 0, 0.05))
-p_lapse <- 0.02 + 0.0008 * a + 0.04 * mci + 0.10 * ad
+iiv     <- pmax(0.12, 0.22 + 0.003 * a + 0.08 * mci + 0.18 * dem + rnorm(N, 0, 0.05))
+p_lapse <- 0.02 + 0.0008 * a + 0.04 * mci + 0.10 * dem
 
 # ---- 3. Layout (same algorithm as the app: random placement + minimum spacing) --
 make_layout <- function(n, H = ASPECT_H) {
@@ -104,7 +104,7 @@ for (part in c("A", "B")) {
     lay  <- make_layout(N_NODES)
     dist <- sqrt(rowSums((lay[-1, , drop = FALSE] - lay[-N_NODES, , drop = FALSE])^2)) / diag
 
-    init_ms <- rlnorm(1, log(850 + 8 * a[i] + 300 * mci[i] + 700 * ad[i]), 0.30)
+    init_ms <- rlnorm(1, log(850 + 8 * a[i] + 300 * mci[i] + 700 * dem[i]), 0.30)
 
     # Weights: distance x remaining distractors (later = easier to find) x within-person noise x lapses
     w <- (0.55 + 0.45 * dist / mean(dist)) *

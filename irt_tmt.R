@@ -85,7 +85,9 @@ to_letter <- function(k) k %% 2 == 1
 #   beta_k  : time intensity of transition k (mean log time)
 #   lambda_k: loading (how strongly k reflects the person's speed tau)
 #   alpha_k : 1 / sigma_k, van der Linden's discrimination
-# A one-factor linear model on log RT is this model with free loadings.
+# A one-factor linear model on log RT with free loadings is the extended model
+# (item-specific speed slopes lambda_k); van der Linden (2006) fixes lambda_k = 1.
+# So std_loading is not alpha; alpha is computed from the uniquenesses below.
 lognormal_fit <- function(Ymat, part) {
   fa  <- factanal(Ymat, factors = 1, scores = "regression")
   sdv <- apply(Ymat, 2, sd)
@@ -165,7 +167,7 @@ info_test$se_scaled <- info_test$se * max_info / 2
 g1 <- ggplot(info_test, aes(theta, info, colour = part)) +
   geom_line(linewidth = 1.1) +
   geom_line(aes(y = se_scaled), linetype = "dashed", linewidth = 0.6) +
-  scale_colour_manual(values = part_cols, labels = c(A = "Part A", B = "Part B")) +
+  scale_colour_manual(values = part_cols, labels = c(A = "TMT-A", B = "TMT-B")) +
   scale_y_continuous(sec.axis = sec_axis(~ . * 2 / max_info, name = "Standard error (dashed)")) +
   labs(x = "Processing speed θ (higher = faster)", y = "Test information (solid)", colour = NULL,
        title = "Where each part measures speed precisely")
@@ -175,7 +177,7 @@ g2 <- ggplot(info_item, aes(theta, info, group = transition, colour = transition
   geom_line(aes(linetype = target), linewidth = 0.5, alpha = 0.85) +
   scale_colour_viridis_c(option = "C", end = 0.9) +
   scale_linetype_manual(values = c("to number" = "solid", "to letter" = "22")) +
-  facet_wrap(~ part, labeller = labeller(part = c(A = "Part A", B = "Part B"))) +
+  facet_wrap(~ part, labeller = labeller(part = c(A = "TMT-A", B = "TMT-B"))) +
   labs(x = "Processing speed θ", y = "Item information", colour = "Transition", linetype = NULL,
        title = "Item information for each of the 24 transitions")
 save_png(g2, "irt_item_information.png", w = 9)
@@ -184,7 +186,7 @@ grm_par$target <- ifelse(grm_par$part == "B" & to_letter(grm_par$transition), "t
 g3 <- ggplot(grm_par, aes(transition, a, colour = part, shape = target)) +
   geom_line(aes(group = part), alpha = 0.4) +
   geom_point(size = 2.3) +
-  scale_colour_manual(values = part_cols, labels = c(A = "Part A", B = "Part B")) +
+  scale_colour_manual(values = part_cols, labels = c(A = "TMT-A", B = "TMT-B")) +
   scale_shape_manual(values = c("to number" = 16, "to letter" = 17)) +
   labs(x = "Transition (1 = first circle to second)", y = "GRM discrimination a", colour = NULL, shape = NULL,
        title = "Which transitions best separate fast from slow participants")
@@ -279,8 +281,8 @@ if ("group" %in% names(scores)) {
   g4 <- ggplot(scores, aes(theta_B, B_time_s, colour = group)) +
     geom_point(alpha = 0.35, size = 0.9) +
     scale_y_log10() +
-    scale_colour_manual(values = c(HC = "#0072B2", MCI = "#E69F00", AD = "#D55E00")) +
-    labs(x = "Part B speed θ (GRM, higher = faster)", y = "Part B completion time (s, log scale)",
+    scale_colour_manual(values = c(HC = "#0072B2", MCI = "#E69F00", Dementia = "#D55E00")) +
+    labs(x = "TMT-B speed θ (GRM, higher = faster)", y = "TMT-B completion time (s, log scale)",
          colour = NULL, title = "IRT speed score against raw completion time")
   save_png(g4, "irt_theta_vs_time.png", w = 7)
 }
