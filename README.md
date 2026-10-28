@@ -2,13 +2,15 @@
 
 ## Hello World, I'm Muriel.
 
-It started from 2 questions. The first I was asked " How can AI help Clinical Psychologist/Neuropsychologist? " in INS conference this February. 
+It started with 2 questions. The first I was asked "How can AI help Clinical Psychologist/Neuropsychologist?" in INS conference this February. 
 To explore this question, I learned vibe coding and learned to work with my AIs. 
-21 October, last Wednesday I attended the online webinar of IRT. 
-Then another question triggered me to do the project is **how to run item response theory (IRT) in R with continuous variables**:
-Tried to explore this question, I started the little project on the Typhoon Friday. 
+Last Wednesday, 21 October (3 a.m. on 22 October, Taiwan time), I attended the online webinar on IRT. 
+Then another question that triggered me to start the project was **how to run item response theory (IRT) in R with continuous variables**:
+Trying to explore this question, I started this little project during the typhoon on Friday. 
 Although it is not impeccable, I hope it is a good enough attempt. 
 Please allow me to invite you to have a look. :)
+
+Last updated: 29 October 2026, 05:20 (Taiwan time, UTC+8)
 
 ## About this project
 This project explores **how to run item response theory (IRT) in R with continuous variables**: 
