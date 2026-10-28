@@ -1,51 +1,32 @@
 # Continuous-response IRT for a smartphone Trail Making Test
 
-## What I want to ask
+## About this project
 
-On Wednesday, October 21, I attended your INS online lecture, and I was too shy to ask my question during the Q&A. Here is my first question: how to do it with continuous variables. So I started a small project with my AI assistants.
-
-More precisely, I want to know **how to run item response theory (IRT) in R when the responses are continuous**: here, the time taken for each segment of the Trail Making Test (TMT).
+This project explores **how to run item response theory (IRT) in R when the responses are continuous**: here, the time taken for each segment of the Trail Making Test (TMT).
 
 To have data to work with, I asked AI assistants (Claude and Gemini) to build a smartphone TMT web app and to simulate 2,000 participants. The R analysis in this repository was also written with AI help.
 
 - You can try the app here: https://pwsunmuriel-cool.github.io/tmt/tmt_mobile_en.html
 - A summary of the whole project, including the simulation results: https://pwsunmuriel-cool.github.io/tmt/site/tmt_project_en.html
 
-With my AI assistants' help, here are my two questions.
+In this app **each participant gets a randomly generated layout**, so a given transition (e.g. circle 7 → 8) has a different distance, direction and set of nearby circles for each person. The "item" is the position in the sequence (and, in Part B, number→letter vs letter→number), not a fixed stimulus.
 
-### Question 1. Random layouts: can a transition still be treated as the same item?
+## Analyses in `irt_tmt.R`
 
-On the paper TMT the layout is fixed, so "transition 7" (circle 7 → 8) is the identical jump for everyone. In this app **each participant gets a randomly generated layout**, so transition 7 has a different distance, direction and set of nearby circles for each person. The "item" is really the position in the sequence (and, in Part B, number→letter vs letter→number), not a fixed stimulus.
-
-- Is it acceptable to treat the 24 transitions of each part as items under random layouts?
-- Currently the analysis removes the distance between circles (a within-person regression on log time) before fitting IRT. Crowding is not adjusted. Is that enough?
-- Or should the app switch to fixed layouts? Options I am considering:
-  1. one fixed layout for everyone, like the paper test;
-  2. a small set of fixed layouts (e.g. 4 forms with matched path length, no crossing lines), rotated across participants and retests;
-  3. keep random layouts and model layout features (distance, crowding) explicitly.
-
-### Question 2. Are the methods the AI used appropriate?
-
-The script `irt_tmt.R` treats the 24 log transition times of each part as continuous items:
+The script treats the 24 log transition times of each part as continuous items:
 
 | Step | Method | R package |
 |---|---|---|
-| Distance adjustment | Within-person regression of log RT on distance, subtracted before IRT | base R |
-| Lognormal response-time model (van der Linden, 2006) | One-factor model on log RT: loadings = discrimination, means = time intensity | `factanal()` |
+| Distance adjustment | One common within-person slope of log RT on distance (with transition fixed effects, error-free transitions only); slope × centred distance is subtracted before IRT. Each person's overall speed is kept | base R |
+| Log RT one-factor model (exploratory) | One-factor model on log RT. Item means = time intensity. The script also reports α = 1 / residual SD (from the uniquenesses), which is van der Linden's (2006) discrimination. The standardized loadings are **not** that discrimination; they relate to the item-specific speed slopes of the extended lognormal model. A dedicated fit (e.g. `LNIRT::LNRT()`) is not done yet | `factanal()` |
 | Graded response model | Each transition's time cut into 5 speed bands, then GRM | `mirt` |
 | Dimensionality | One speed factor vs two correlated factors (A, B) | `mirt` |
 | DIF | Device (iOS vs Android) on the binned data | `mirt` |
 | Errors | Rasch model on "error on this transition" (Part B only; Part A too sparse) | `mirt` |
 | Explanatory IRT | `log RT ~ part × (distance + position) + switch + (1 + part_B \| person)`; Poisson model for errors | `lme4` |
-| Measurement invariance | Multi-group CFA on log RT: configural → metric → scalar → strict, judged by ΔCFI ≥ −.010 and ΔRMSEA ≤ .015 | `lavaan` |
+| Measurement invariance | Multi-group CFA on log RT: configural → metric → scalar → strict, using ΔCFI ≥ −.010 and ΔRMSEA ≤ .015 (Chen, 2007) as reference cut-offs, not as standards validated for this model | `lavaan` |
 
-Specific doubts:
-
-- Is a one-factor model on log RT a sound way to fit the lognormal response-time model, or should I use a dedicated package (e.g. `LNIRT`) or a Bayesian model?
-- **Two-step vs one-step distance handling:** is subtracting the distance effect first acceptable, or should distance always be a covariate inside the model?
-- **Binning for the GRM:** the GRM score separates MCI from healthy controls slightly worse than raw time (AUC .77 vs .80). Should the continuous model be the primary analysis and the GRM only a supplement?
-- **Measurement invariance at N = 2,000:** are ΔCFI / ΔRMSEA cut-offs appropriate here? Strict invariance fails across age because older people's times vary more between transitions. I read this as within-person variability, not bias. Is that interpretation right?
-- **What is missing?** Not yet done: distribution checks, local dependence (Yen's Q3), person fit for response times, censoring at time limits (150 s / 300 s), a joint speed–accuracy model, and sensitivity to the number of bins.
+Not yet done: distribution checks, local dependence (Yen's Q3, with data-specific critical values rather than a fixed .20), person fit for response times, censoring at time limits, a joint speed–accuracy model (e.g. `LNIRT::LNIRT()`), and sensitivity to the number of bins.
 
 ## Important: the data are simulated
 
@@ -57,7 +38,7 @@ Specific doubts:
 
 | | Part A | Part B |
 |---|---|---|
-| Lognormal model RMSEA / omega | .003 / .94 | .009 / .97 |
+| Log RT one-factor model RMSEA / omega | .003 / .94 | .009 / .97 |
 | GRM marginal reliability | .94 | .96 |
 | GRM discrimination range | 1.33–1.59 | 1.80–2.07 |
 
@@ -92,9 +73,9 @@ source("irt_tmt.R")           # about 3 minutes; set RUN_DIF <- FALSE to skip th
 
 ## Known issues in the app (not yet fixed)
 
-- In swipe mode, crossing an unvisited circle on the way to the correct one counts as an error; standard scoring does not count this.
-- No time limits (150 s for Part A, 300 s for Part B).
-- Tap vs swipe is not recorded per transition; smartphone tapping is known to shrink B−A compared with drawing.
+- In swipe mode, crossing an unvisited circle on the way to the correct one counts as an error. Paper-test instructions do not clearly cover this case, so the app's own rule still has to be decided (for example, only a selected circle counts).
+- No time limits. Stop rules differ across protocols (for example, CENTER-TBI stops Part A at 100 s and Part B at 300 s); 150 s / 300 s would be this project's own choice.
+- Tap vs swipe is not recorded per transition. Tapping may change A, B and B−A compared with drawing, but the direction and size are not established for this interface. The simulation does not build in such an effect.
 - Part B uses English letters A–L, which may not suit older Taiwanese adults with little schooling.
 
 ## Key references
@@ -102,7 +83,12 @@ source("irt_tmt.R")           # about 3 minutes; set RUN_DIF <- FALSE to skip th
 - Tombaugh, T. N. (2004). Trail Making Test A and B: Normative data stratified by age and education. *Archives of Clinical Neuropsychology, 19*(2), 203–214. https://doi.org/10.1016/S0887-6177(03)00039-8
 - Ashendorf, L., et al. (2008). Trail Making Test errors in normal aging, mild cognitive impairment, and dementia. *Archives of Clinical Neuropsychology, 23*(2), 129–137. https://doi.org/10.1016/j.acn.2007.11.005
 - Sun, Y., et al. (2014). A nationwide survey of mild cognitive impairment and dementia, including very mild dementia, in Taiwan. *PLoS ONE, 9*(6), e100303. https://doi.org/10.1371/journal.pone.0100303
-- Woods, D. L., et al. (2015). *PLoS ONE*. https://doi.org/10.1371/journal.pone.0124345 (distance and segment timing in a computerized TMT; not checked against the source)
-- van der Linden, W. J. (2006). A lognormal model for response times on test items. *Journal of Educational and Behavioral Statistics* (not checked against the source)
-- van der Linden, W. J. (2007). A hierarchical framework for modeling speed and accuracy on test items. *Psychometrika* (not checked against the source)
+- Woods, D. L., Wyma, J. M., Herron, T. J., & Yund, E. W. (2015). The effects of aging, malingering, and traumatic brain injury on computerized trail-making test performance. *PLoS ONE, 10*(6), e0124345. https://doi.org/10.1371/journal.pone.0124345 (path length vs segment time; mouse-based computerized TMT, not touch)
+- van der Linden, W. J. (2006). A lognormal model for response times on test items. *Journal of Educational and Behavioral Statistics, 31*(2), 181–204. https://doi.org/10.3102/10769986031002181
+- van der Linden, W. J. (2007). A hierarchical framework for modeling speed and accuracy on test items. *Psychometrika, 72*(3), 287–308. https://doi.org/10.1007/s11336-006-1478-z
+- Chen, F. F. (2007). Sensitivity of goodness of fit indexes to lack of measurement invariance. *Structural Equation Modeling, 14*(3), 464–504. https://doi.org/10.1080/10705510701301834
+- Yen, W. M. (1984). Effects of local item dependence on the fit and equating performance of the three-parameter logistic model. *Applied Psychological Measurement, 8*(2), 125–145. https://doi.org/10.1177/014662168400800201
+- Christensen, K. B., Makransky, G., & Horton, M. (2017). Critical values for Yen's Q3: Identification of local dependence in the Rasch model using residual correlations. *Applied Psychological Measurement*. https://doi.org/10.1177/0146621616677520
+
+Bibliographic details were checked on 2026-10-28 (Crossref / PubMed, and an independent check with Perplexity); see `Verification_PP.md`.
 
