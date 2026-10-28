@@ -46,10 +46,10 @@ theta_B vs lognormal B speed             theta_B|A vs B/A
                        0.990                       -0.902 
 
 == Group means of IRT speed (higher = faster) ==
-  group theta_A theta_B theta_B_given_A
-1    AD   -1.29   -1.32           -0.43
-2    HC    0.25    0.28            0.11
-3   MCI   -0.50   -0.60           -0.25
+     group theta_A theta_B theta_B_given_A
+1 Dementia   -1.29   -1.32           -0.43
+2       HC    0.25    0.28            0.11
+3      MCI   -0.50   -0.60           -0.25
 
 == HC vs MCI discrimination (AUC) ==
             score AUC_HC_vs_MCI
