@@ -108,5 +108,3 @@ source("irt_tmt.R")           # about 3 minutes; set RUN_DIF <- FALSE to skip th
 - Yen, W. M. (1984). Effects of local item dependence on the fit and equating performance of the three-parameter logistic model. *Applied Psychological Measurement, 8*(2), 125–145. https://doi.org/10.1177/014662168400800201
 - Christensen, K. B., Makransky, G., & Horton, M. (2017). Critical values for Yen's Q3: Identification of local dependence in the Rasch model using residual correlations. *Applied Psychological Measurement*. https://doi.org/10.1177/0146621616677520
 
-Bibliographic details were checked on 2026-10-28 (Crossref / PubMed, and an independent check with Perplexity); see `Verification_PP.md`.
-
