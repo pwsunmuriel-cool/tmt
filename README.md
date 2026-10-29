@@ -1,4 +1,4 @@
-# Continuous-response IRT for a smartphone Trail Making Test
+# IRT with continuous variables: Trail Making Test
 
 ## Hello World, I'm Muriel.
 
